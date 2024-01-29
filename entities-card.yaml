@@ -20,10 +20,12 @@ entities:
     name: PM <2.5µm Concentratie
   - entity: sensor.weather_station_pm_10_0_m_concentratie
     name: PM <10.0µm Concentratie
-  - entity: sensor.us_aqi_achtertuin
-    name: US AQI
-  - entity: sensor.us_aqi_mean_afgelopen_24_uur
-  - entity: sensor.us_air_pollution_level_achtertuin
+  - entity: sensor.pm_2_5_mean_afgelopen_24_uur
+  - entity: sensor.pm_10_mean_afgelopen_24_uur
+  - entity: sensor.live_aqi_achtertuin
+  - entity: sensor.official_aqi_achtertuin
+  - entity: sensor.live_air_pollution_level_achtertuin
+  - entity: sensor.official_air_pollution_level_achtertuin
   - entity: button.weather_station_backlight_control
     name: Backlight inschakelen
   - entity: switch.weather_station_start_pms_meting
