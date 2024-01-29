@@ -1,0 +1,286 @@
+esphome:
+  name: weather-station
+  friendly_name: "Weather & AQI Station"
+  on_boot:
+    priority: -10
+    then:
+# Check for successful connection to HA.
+    - wait_until:
+        api.connected:
+    - logger.log: API is connected!
+# Set backlight off by default.
+    - lambda: |-
+        id(mydisplay).no_backlight();
+# Turn backlight on and off to trigger it for 30 seconds.
+    - binary_sensor.template.publish:
+        id: backlight
+        state: ON
+    - binary_sensor.template.publish:
+        id: backlight
+        state: OFF
+    - logger.log: Backlight turned on during startup
+# Project details for easy identification.
+  project:
+    name: Broeks.Weather_AQI_Station
+    version: "1.0"
+  platform: esp32
+  board: esp32dev
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "S/+/JAT9so+wFJVbx0D7Oqg/3wXsm4OdcQhNrn0rbUA="
+
+# Enable OTA
+ota:
+  password: "0a25aa32d33a1911ddda0256a78e1731"
+
+# Getting wifi details from secrets
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Weather-Station Fallback Hotspot"
+    password: "q06xtEanvFSb"
+
+captive_portal:
+
+# Optionally bluetooth proxy can be enabled by uncommenting next 2 lines. It is quite heavy and might not fit memory.
+#bluetooth_proxy:
+# active: true
+
+# Get time from HA to use on display.
+time:
+- platform: homeassistant
+  id: my_time
+
+# Enable i2c bus, which is used for driving the display.
+i2c:
+  sda: GPIO17
+  scl: GPIO16
+
+# Enable UART, which is used for the PM sensor
+uart:
+  tx_pin: GPIO26
+  rx_pin: GPIO27
+  baud_rate: 9600
+
+# Enable display
+display:
+  - platform: lcd_pcf8574
+    dimensions: 16x2
+    update_interval: 5s
+    address: 0x27
+    id: mydisplay
+    lambda: |-
+      static bool page1 = true;
+      if (page1) {
+        it.strftime(0, 0, "%H:%M-%d.%m.%Y", id(my_time).now());
+        if (id(day).state) {
+          it.print(0, 1, "Daglicht");
+          } else {
+          it.print(0, 1, "Geen daglicht");
+        }
+      } else {
+        it.printf(0, 0, "Temp %.1f\x08 (%.0f%%)", id(temp_sensor).state, id(humidity_sensor).state);
+        it.printf(0, 1, "PL %s", id(apl).state.c_str());
+      }
+      page1 = !page1;
+
+sensor:
+# Config for AM2302 (or equivalent) temp and humidity sensor  
+  - platform: dht
+    pin: GPIO23
+    model: AM2302
+    temperature:
+      name: "Buiten temperatuur"
+      id: temp_sensor  
+    humidity:
+      name: "Buiten luchtvochtigheid"
+      id: humidity_sensor
+    update_interval: 60s 
+# Config for light sensor. Range is only 0-220 lux, so as soon as it starts dropping daylight is going fast.
+  - platform: adc
+    pin: GPIO34
+    attenuation: 0db
+    name: "Buiten lichtsterkte"
+    device_class: illuminance
+    unit_of_measurement: lx
+    id: light_sensor
+    update_interval: 60s
+    raw: true
+# Setting filters to get proper lux reading based on raw input.
+    filters:
+      - multiply: 0.00026862
+      - lambda: |-
+          return (x / 10000.0) * 2000000.0;
+# Trigger the binary sensors used for outdoor and indoor lighting. I decided to take care of filtering
+# out multiple triggers around the threshold in HA, but it could be done here also.
+    on_value_range:
+      - below: 35.0
+        then:
+          - binary_sensor.template.publish:
+              id: day
+              state: OFF
+          - binary_sensor.template.publish:
+              id: shimmer
+              state: ON
+      - above: 35.0
+        below: 180.0
+        then:
+          - binary_sensor.template.publish:
+              id: day
+              state: ON
+          - binary_sensor.template.publish:
+              id: shimmer
+              state: ON
+      - above: 180.0
+        then:
+          - binary_sensor.template.publish:
+              id: day
+              state: ON
+          - binary_sensor.template.publish:
+              id: shimmer
+              state: OFF
+# Setting up a sensor to report wifi signal strength. Just because I do this for all my devices.
+  - platform: wifi_signal
+    name: "WiFi signaal"
+    id: wifi_strength
+    icon: mdi:wifi-arrow-up-down
+    update_interval: 60s
+# Configuration of the particle sensor
+  - platform: pmsx003
+    type: PMSX003
+    pm_1_0:
+      name: "PM <1.0µm Concentratie"
+# The filters make sure we take the max value or each 15 measurements.
+# This is needed because I noticed that the sensor first sends a few very low readings
+# when it is re-enabled after a few minites (see below). This will make sure those
+# are discarted of.
+      filters:
+        - max:
+            window_size: 15
+            send_every: 15 
+            send_first_at: 15         
+    pm_2_5:
+      name: "PM <2.5µm Concentratie"
+      filters:
+        - max:
+            window_size: 15
+            send_every: 15 
+            send_first_at: 15         
+    pm_10_0:
+      name: "PM <10.0µm Concentratie"
+      filters:
+        - max:
+            window_size: 15
+            send_every: 15 
+            send_first_at: 15
+
+# This switch only enabled the particle sensor for 20 seconds every 2 minutes, 
+# which should extend the lifetime from 3.5 years to about 18 years.
+switch:
+  - platform: gpio
+    pin: 
+      number: GPIO25
+    id: pms_set
+    name: "Start PMS meting"
+
+# This is the actual timer for the switch.  
+interval:
+  - interval: 120s
+    then:
+      - switch.turn_on: pms_set
+      - delay: 20s
+      - switch.turn_off: pms_set
+
+# These binary sensor enables the backlight of the display for 30 seonds.
+# It exposes a button in HA to trigger manually, but it is also triggered by a motion sensor.
+# I also expose the result of the light sensor validations as binary sensors in HA.
+binary_sensor:
+  - platform: gpio
+    pin: 19
+    name: "Beweging sensor"
+    device_class: motion
+    id: motion_sensor
+# The delay is because the sensor is very sensitive and I don't want it to trigger
+# the backlight constantly. The 5 seconds seems to be the sweet spot in my case.
+    filters:
+      - delayed_on: 5000ms
+    on_press:
+      then:
+        - binary_sensor.template.publish:
+            id: backlight
+            state: ON
+        - binary_sensor.template.publish:
+            id: backlight
+            state: OFF
+        - logger.log: Backlight turned on automatically for 30 seconds
+# This is the actual controller for tyhe backlight
+  - platform: template
+    id: backlight
+    name: "Backlight"
+    publish_initial_state: true
+    icon: mdi:television-ambient-light
+    filters:
+      - delayed_off: 30s
+    on_press:
+      then:
+        - lambda: |-
+            id(mydisplay).backlight();
+    on_release:
+      then:
+        - lambda: |-
+            id(mydisplay).no_backlight();
+        - logger.log: Backlight turned off
+  - platform: template
+    id: day
+    name: "Daglicht"
+    icon: mdi:sun-wireless-outline
+  - platform: template
+    id: shimmer
+    name: "Schemer-Donker"
+    icon: mdi:shimmer
+
+# Finally some text sensors indicating seme default I expose for all my sensors.
+text_sensor:
+  - platform: version
+    hide_timestamp: false
+    name: "ESPHome Version"
+    entity_category: diagnostic
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      icon: mdi:wifi
+      entity_category: diagnostic
+    ssid:
+      name: "Connected SSID"
+      icon: mdi:wifi-strength-2
+      entity_category: diagnostic
+# As I am displaying the air quality on my display, I'm getting the processed result from HA.
+  - platform: homeassistant
+    name: "Air Pollution Level"
+    id: apl
+    entity_id: sensor.us_air_pollution_level_achtertuin      
+
+# Exposing 2 buttons to HA; one for a device restart and one for a manual trigger of the backlight.
+button:
+  - platform: restart
+    name: "Restart"
+  - platform: template
+    name: "Backlight Control"
+    id: backlight_button
+    on_press:
+      then:
+        - binary_sensor.template.publish:
+            id: backlight
+            state: ON
+        - binary_sensor.template.publish:
+            id: backlight
+            state: OFF
+        - logger.log: Backlight turned on manually for 30 seconds
