@@ -1,0 +1,7 @@
+- platform: statistics
+  name: "PM 10 mean afgelopen 24 uur"
+  entity_id: sensor.weather_station_pm_10_0_m_concentratie
+  state_characteristic: mean
+  unique_id: 202401291241
+  max_age:
+    hours: 24
