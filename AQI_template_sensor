@@ -1,3 +1,1 @@
-{% set state = (int(states("sensor.pm_2_5_aqi")) + int(states("sensor.pm_10_0_aqi")) / 2 ) %}
-{% set AQI = (state | float) %}
-{{ AQI | round(0) }}
+{{ ((int(states("sensor.pm_2_5_aqi")) + int(states("sensor.pm_10_0_aqi"))) /  2 ) }}
