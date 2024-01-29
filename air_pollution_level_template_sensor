@@ -1,0 +1,15 @@
+{% set state = int(states("sensor.official_aqi_achtertuin")) %}
+{% if state <= 1 %}
+{% set APL = 'Zeer goed' %}
+{% elif state > 1 and state <= 2 %}
+{% set APL = 'Goed' %}
+{% elif state > 2 and state <= 3 %}
+{% set APL = 'Matig' %}
+{% elif state > 3 and state <= 4 %}
+{% set APL = 'Slecht' %}
+{% elif state > 4 and state <= 5 %}
+{% set APL = 'Zeer slecht' %}
+{% elif state > 5 %}
+{% set APL = 'Ongezond' %}
+{% endif %}
+{{ APL }}
