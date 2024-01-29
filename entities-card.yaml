@@ -1,0 +1,31 @@
+type: entities
+entities:
+  - entity: binary_sensor.weather_station_backlight
+    name: Backlight
+  - entity: binary_sensor.weather_station_beweging_sensor
+    name: Beweging sensor
+  - entity: sensor.weather_station_buiten_lichtsterkte
+    name: Buiten lichtsterkte
+  - entity: binary_sensor.weather_station_daglicht
+    name: Daglicht
+  - entity: binary_sensor.weather_station_schemer_donker
+    name: Schemer-Donker
+  - entity: sensor.weather_station_buiten_luchtvochtigheid
+    name: Buiten luchtvochtigheid
+  - entity: sensor.weather_station_buiten_temperatuur
+    name: Buiten temperatuur
+  - entity: sensor.weather_station_pm_1_0_m_concentratie
+    name: PM <1.0µm Concentratie
+  - entity: sensor.weather_station_pm_2_5_m_concentratie
+    name: PM <2.5µm Concentratie
+  - entity: sensor.weather_station_pm_10_0_m_concentratie
+    name: PM <10.0µm Concentratie
+  - entity: sensor.us_aqi_achtertuin
+    name: US AQI
+  - entity: sensor.us_aqi_mean_afgelopen_24_uur
+  - entity: sensor.us_air_pollution_level_achtertuin
+  - entity: button.weather_station_backlight_control
+    name: Backlight inschakelen
+  - entity: switch.weather_station_start_pms_meting
+    name: Start PMS meting
+state_color: true
