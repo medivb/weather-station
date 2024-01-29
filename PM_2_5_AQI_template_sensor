@@ -1,0 +1,15 @@
+{% set state = int(states("sensor.pm_2_5_mean_afgelopen_24_uur")) %}
+{% if state | float < 10 %}
+{% set AQI = 1 %}
+{% elif state | float > 10 and state | float <= 20 %}
+{% set AQI = 2 %}
+{% elif state | float > 20 and state | float <= 25 %}
+{% set AQI = 3 %}
+{% elif state | float > 25 and state | float <= 50 %}
+{% set AQI = 4 %}
+{% elif state | float > 50 and state | float <= 75 %}
+{% set AQI = 5 %}
+{% elif state | float > 75 and state | float <= 800 %}
+{% set AQI = 6 %}
+{% endif %}
+{{ AQI | round(0) }}
