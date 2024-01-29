@@ -1,7 +1,0 @@
-- platform: statistics
-  name: "PM 2.5 mean afgelopen 24 uur"
-  entity_id: sensor.weather_station_pm_2_5_m_concentratie
-  state_characteristic: mean
-  unique_id: 202401291113
-  max_age:
-    hours: 24
