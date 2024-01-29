@@ -266,7 +266,7 @@ text_sensor:
   - platform: homeassistant
     name: "Air Pollution Level"
     id: apl
-    entity_id: sensor.us_air_pollution_level_achtertuin      
+    entity_id: sensor.official_air_pollution_level_achtertuin      
 
 # Exposing 2 buttons to HA; one for a device restart and one for a manual trigger of the backlight.
 button:
