@@ -33,7 +33,7 @@ I really liked the devboard that actually includes a wide-range (5V to 16V) powe
 
 After creating the configuration in ESP Home and connecting all the sensors, I used a hot-glue gun to fix everything in place and it has been working fine like that for a few weeks now.
 
-<b>Intepretation of the data:</b>
+<b>Interpretation of the data:</b>
 
 This was actually the challenging part. I started out making some template sensors to calculate the AQI according to the US standard. After completing this, I learned there actually is a EU standard, so decided to implement that instead. The EU AQI standard actually works with 6 levels and dictates how each type of measurement has to be intepreted in order to fall in one of these 6 levels. This is described quite well on https://ecmwf-projects.github.io/copernicus-training-cams/proc-aq-index.html. First step is to create a 24 hour mean statistics sensor for each of the relevant sensors. In my case, those are the PM2.5 and PM10.0 sensors. The sepcifications for those are included in the repository. These go into your configuration, after which you need to restart HA. The 24 mean is used as input for the intepretation. First you calculate them individually (rules are different), done by the PM_2_5_AQI_template_sensor and PM_10_AQI_template_sensor in the repository, which you can use as input for a helper. Last step is to calculate the average between these two, which will be your actual AQI. This is done by the AQI_template_sensor. I also create a template sensor that reflects the Air Pollution Level accrding to the EU standard. I display this also on the LCD of the weather station, together with the date, time, temperature and humidity.
 
